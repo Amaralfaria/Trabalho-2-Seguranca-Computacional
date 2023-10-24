@@ -28,6 +28,10 @@ static const array<array<uint8_t, 4>, 4> columnTable = {{
     {3,1,1,2}
 }};
 
+static const array<uint8_t,15> roundConstants = {
+    {0x00, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36, 0x6C, 0xD8, 0xAB, 0x4D}
+};
+
 uint8_t multiplyInGF(uint8_t a, uint8_t b) {
     uint8_t result = 0;
     uint8_t hi_bit_set;
@@ -49,27 +53,88 @@ uint8_t addInGF(uint8_t a, uint8_t b) {
     return a ^ b;
 }
 
-uint8_t operationGF(const array<uint8_t, 4> elements){
-    
+uint8_t operationGF(const array<uint8_t, 4> &elements, const int linha){
+    uint8_t sum = 0;
+    for(int i = 0;i<elements.size();i++){
+        sum = addInGF(sum, multiplyInGF(elements[i], columnTable[linha][i]));
+    }
+
+    return sum;
 }
 
 
+uint8_t subByte(const uint8_t byte) {
+    return sBox[byte >> 4][byte & 0x0F];
+}
 
-
-
-void mixColumns(array<array<uint8_t, 4>, 4> &block){
+void subBytes(array<array<uint8_t, 4>, 4> &block){
     for(int i = 0;i<block.size();i++){
-        array<uint8_t, 4> elements;
-        for(int j = 0;j<block.size();j++){
-            elements[j] = block[j][i];
+        for(int j = 0;j<block[i].size();j++){
+            block[i][j] = subByte(block[i][j]);
         }
-
     }
 }
 
+array<uint8_t,4> g_function(const array<uint8_t,4> &w, int round){
+    array<uint8_t,4> g_operation(w);
+
+    rotate(g_operation.begin(),g_operation.begin() + 1, g_operation.end());
+
+    // rotate_copy(w.begin(),w.begin() + 1, w.end(), back_inserter(g_operation));
+    
+
+    for(int i = 0;i<g_operation.size();i++){
+        g_operation[i] = subByte(g_operation[i]);
+        g_operation[i] ^= roundConstants[round]; 
+    }
+
+    return g_operation;
+}
+
+array<array<uint8_t, 4>, 4> keyExpansion(const array<array<uint8_t, 4>, 4> &key, int round){
+    array<array<uint8_t, 4>, 4> current_key;
+    array<array<uint8_t, 4>, 4> next_key;
+
+
+    for(int coluna = 0;coluna<key.size();coluna++){
+        for(int linha = 0;linha<key.size();linha++){
+            current_key[coluna][linha] = key[linha][coluna];
+        }
+    }
+
+    array<uint8_t,4> g_operation = g_function(current_key[current_key.size()-1], round);
+
+    for(int i = 0;i<current_key.size();i++){
+        for(int j = 0;j<current_key[i].size();j++){
+            if(i > 0){
+                next_key[i][j] = current_key[i][j] ^ next_key[i-1][j];
+            }else{
+                next_key[i][j] = current_key[i][j] ^ g_operation[j];
+            }
+        }
+    }
+
+
+    return next_key;
+}
 
 
 
+
+
+void mixColumns(array<array<uint8_t, 4>, 4> &block){ // OK
+    for(int coluna = 0;coluna<block.size();coluna++){
+        array<uint8_t,4> elementos;
+        for(int linha = 0;linha<block[coluna].size();linha++){
+            elementos[linha] = block[linha][coluna];
+        }
+        
+        for(int linha = 0;linha<block[coluna].size();linha++){
+            uint8_t sum = operationGF(elementos,linha);
+            block[linha][coluna] = sum;
+        }
+    }
+}
 
 
 
@@ -89,41 +154,48 @@ void shiftRows(array<array<uint8_t, 4>, 4> &block){
 }
 
 
-uint8_t subByte(const uint8_t byte) {
-    return sBox[byte >> 4][byte & 0x0F];
-}
-
-void subBytes(array<array<uint8_t, 4>, 4> &block){
-    for(int i = 0;i<block.size();i++){
-        for(int j = 0;j<block[i].size();j++){
-            block[i][j] = subByte(block[i][j]);
-        }
-    }
-}
-
-
 
 
 
 int main(){
     array<array<uint8_t, 4>, 4> key = {
         {
-        {54,37,12,122},
-        {48,200,211,164},
-        {111,14,76,32},
-        {24,68,100,4}
+        {0x2b,0x28,0xab,0x09},
+        {0x7e,0xae,0xf7,0xcf},
+        {0x15,0xd2,0x15,0x4f},
+        {0x16,0xa6,0x88,0x3c}
         }
     };
 
     array<array<uint8_t, 4>, 4> block = {
         {
-        {83,90,120,12},
-        {254,20,11,189},
-        {115,203,7,29},
-        {240,66,10,47}
+        {0x32,0x88,0x31,0xe0},
+        {0x43,0x5a,0x31,0x37},
+        {0xf6,0x30,0x98,0x07},
+        {0xa8,0x8d,0xa2,0x34}
         }
     };
 
+    array<array<uint8_t, 4>, 4> round = keyExpansion(key,1);
+
+    // addRoundKey(key,block);
+    // subBytes(block);
+    // shiftRows(block);
+    // mixColumns(block);
+
+    for(int i = 0;i<round.size();i++){
+        for(int j = 0;j<round.size();j++){
+            cout << hex << (int) round[i][j] << " ";
+        }
+        cout << "\n";
+    }
+
+    // for(int i = 0;i<block.size();i++){
+    //     for(int j = 0;j<block.size();j++){
+    //         cout << hex << (int) block[i][j] << " ";
+    //     }
+    //     cout << "\n";
+    // }
 
 
 
