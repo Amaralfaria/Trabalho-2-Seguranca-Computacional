@@ -80,13 +80,10 @@ array<uint8_t,4> g_function(const array<uint8_t,4> &w, int round){
 
     rotate(g_operation.begin(),g_operation.begin() + 1, g_operation.end());
 
-    // rotate_copy(w.begin(),w.begin() + 1, w.end(), back_inserter(g_operation));
-    
-
     for(int i = 0;i<g_operation.size();i++){
         g_operation[i] = subByte(g_operation[i]);
-        g_operation[i] ^= roundConstants[round]; 
     }
+    g_operation[0] ^= roundConstants[round]; 
 
     return g_operation;
 }
@@ -94,6 +91,7 @@ array<uint8_t,4> g_function(const array<uint8_t,4> &w, int round){
 array<array<uint8_t, 4>, 4> keyExpansion(const array<array<uint8_t, 4>, 4> &key, int round){
     array<array<uint8_t, 4>, 4> current_key;
     array<array<uint8_t, 4>, 4> next_key;
+    array<array<uint8_t, 4>, 4> result;
 
 
     for(int coluna = 0;coluna<key.size();coluna++){
@@ -104,18 +102,28 @@ array<array<uint8_t, 4>, 4> keyExpansion(const array<array<uint8_t, 4>, 4> &key,
 
     array<uint8_t,4> g_operation = g_function(current_key[current_key.size()-1], round);
 
+
+
     for(int i = 0;i<current_key.size();i++){
         for(int j = 0;j<current_key[i].size();j++){
-            if(i > 0){
-                next_key[i][j] = current_key[i][j] ^ next_key[i-1][j];
+            if(i != 0){
+                next_key[i][j] = (current_key[i][j] ^ next_key[i-1][j]);
             }else{
-                next_key[i][j] = current_key[i][j] ^ g_operation[j];
+                next_key[i][j] = (current_key[i][j] ^ g_operation[j]);
             }
         }
     }
 
+    for(int i = 0;i<next_key.size();i++){
+        for(int j = 0;j<next_key[i].size();j++){
+            result[j][i] = next_key[i][j];
+        }
+    }
 
-    return next_key;
+
+
+
+    return result;
 }
 
 
@@ -153,6 +161,31 @@ void shiftRows(array<array<uint8_t, 4>, 4> &block){
     }
 }
 
+array<array<uint8_t, 4>, 4> aesEncript(array<array<uint8_t, 4>, 4> block, array<array<uint8_t, 4>, 4> key, int n_rounds){
+    //Initial round
+    addRoundKey(key,block);
+
+    //1 : n-1 rounds
+    for(int i = 1;i<n_rounds;i++){
+        subBytes(block);
+        shiftRows(block);
+        mixColumns(block);
+        key = keyExpansion(key,i);
+        addRoundKey(key,block);
+
+
+        // cout << "Round: " << i+1 << "\n";
+    }
+
+    //Final round
+    subBytes(block);
+    shiftRows(block);
+    key = keyExpansion(key,n_rounds);
+    addRoundKey(key,block);
+
+    return block;
+}
+
 
 
 
@@ -176,26 +209,15 @@ int main(){
         }
     };
 
-    array<array<uint8_t, 4>, 4> round = keyExpansion(key,1);
+    array<array<uint8_t, 4>, 4> encripted_block = aesEncript(block,key,10);
 
-    // addRoundKey(key,block);
-    // subBytes(block);
-    // shiftRows(block);
-    // mixColumns(block);
 
-    for(int i = 0;i<round.size();i++){
-        for(int j = 0;j<round.size();j++){
-            cout << hex << (int) round[i][j] << " ";
+    for(int i = 0;i<encripted_block.size();i++){
+        for(int j = 0;j<encripted_block.size();j++){
+            cout << hex << (int) encripted_block[i][j] << " ";
         }
         cout << "\n";
     }
-
-    // for(int i = 0;i<block.size();i++){
-    //     for(int j = 0;j<block.size();j++){
-    //         cout << hex << (int) block[i][j] << " ";
-    //     }
-    //     cout << "\n";
-    // }
 
 
 
