@@ -1,3 +1,24 @@
+// {
+//     "configurations": [
+//         {
+//             "name": "Win32",
+//             "includePath": [
+//                 "${workspaceFolder}/**"
+//             ],
+//             "defines": [
+//                 "_DEBUG",
+//                 "UNICODE",
+//                 "_UNICODE"
+//             ],
+//             "windowsSdkVersion": "10.0.22000.0",
+//             "compilerPath": "C:/mingw64/mingw64/bin/g++.exe",
+//             "cStandard": "c17",
+//             "cppStandard": "c++17",
+//             "intelliSenseMode": "windows-gcc-x64"
+//         }
+//     ],
+//     "version": 4
+// }
 {
     "configurations": [
         {
@@ -10,11 +31,11 @@
                 "UNICODE",
                 "_UNICODE"
             ],
-            "windowsSdkVersion": "10.0.22000.0",
-            "compilerPath": "C:/mingw64/mingw64/bin/g++.exe",
-            "cStandard": "c17",
+            "windowsSdkVersion": "10.0.19041.0",
+            "compilerPath": "g++", // Or complete absolute path "D:/MinGW/i686-8.1.0-release-posix-dwarf-rt_v6-rev0/mingw32/bin/g++.exe"
+            "cStandard": "c11",
             "cppStandard": "c++17",
-            "intelliSenseMode": "windows-gcc-x64"
+            "intelliSenseMode": "clang-x86"
         }
     ],
     "version": 4

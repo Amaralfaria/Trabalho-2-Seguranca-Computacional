@@ -185,26 +185,38 @@ array<array<uint8_t, 4>, 4> aesEncript(array<array<uint8_t, 4>, 4> block, array<
 
 uint64_t generateRandom(){
     random_device rd;
-    uint64_t seed = rd() + static_cast<uint8_t>(
+    uint64_t seed = rd() + static_cast<uint64_t>(
         chrono::high_resolution_clock::now().time_since_epoch().count()
     );
-    mt19937 gen(seed);
+    mt19937_64 gen(seed);
 
-    uniform_int_distribution<uint8_t> distribution(0,255);
-    uint8_t random8 = distribution(gen);
+    uniform_int_distribution<uint64_t> distribution;
+    uint64_t random8 = distribution(gen);
 
     return random8;
 }
 
 array<array<uint8_t, 4>, 4> generate_IV_matrix(){
     array<array<uint8_t, 4>, 4> matrix;
+    // uint64_t n = generateRandom();
+    uint64_t n = 0xa0b44e89da841a4b;
 
-    for(int i = 0;i<4;i++){
+    int shift = 56;
+
+    for(int i = 0;i<matrix.size();i++){
+        matrix[i].fill(0);
+    }
+
+    // cout << hex << n << "\n";
+
+    for(int i = 0;i<2;i++){
         for(int j = 0;j<4;j++){
-            uint8_t n = generateRandom();
-            matrix[i][j] = n;
-            cout << hex << (int) n;
+            matrix[i][j] = (uint8_t) (n >> (shift)) & 0XFF;
+            // cout << hex << (int) matrix[i][j] << " ";
+            shift-=8;
         }
+
+        cout << "\n";
     }
     cout << "\n";
 
@@ -212,7 +224,8 @@ array<array<uint8_t, 4>, 4> generate_IV_matrix(){
 }
 
 array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, int contador){
-    array<array<uint8_t,4>,4> IVRound;
+    array<array<uint8_t,4>,4> IVRound(IV);
+
     int shift = 56;
     for(int i = 2;i<IV.size();i++){
         for(int j = 0;j<IV[i].size();j++){
@@ -239,9 +252,23 @@ array<array<uint8_t, 4>, 4> getEncriptedCipherBlock(const array<array<uint8_t, 4
     return cipherBlock;
 }
 
+vector<array<array<uint8_t, 4>, 4>> generateBlocks(string filepath){
+    
+}
+
 
 vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, string filepath){
     array<array<uint8_t,4>,4> IV = generate_IV_matrix();
+
+    // for(int i = 0;i<IV.size();i++){
+    //     for(int j = 0;j<IV[i].size();j++){
+    //         cout << hex << (int) IV[i][j] << " "; 
+    //     }
+    //     cout << "\n";
+    // }
+    // cout << "\n";
+
+
     vector<array<array<uint8_t,4>,4>> encriptedFile;
 
     std::ifstream arquivo(filepath, std::ios::binary);
@@ -254,26 +281,46 @@ vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, stri
 
     uint8_t byte = arquivo.get();
     array<array<uint8_t,4>,4> block;
+
+    for(int i = 0;i<block.size();i++){
+        block[i].fill(0);
+    }
+
     int pos = 0;
     uint64_t contador = 0;
+    bool empty = true;;
 
-    while(byte < 255){
+
+    while(arquivo.peek() != EOF){
+        empty = false;
         block[pos/4][pos%4] = byte;
         byte = arquivo.get();
         pos++;
 
         if(pos>15){
             array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,contador);
+
             array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,block);
 
-            encriptedFile.push_back(cipherBlock);
+            encriptedFile.push_back(array<array<uint8_t,4>,4>(cipherBlock));
+
+            for(int i = 0;i<block.size();i++){
+                block[i].fill(0);
+            }
 
             pos = 0;
             contador++;
+            empty = true;
         }
-
-
     }
+
+    if(!empty){
+        array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,contador);
+        array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,block);
+        encriptedFile.push_back(cipherBlock);
+    }
+
+    
 
     arquivo.close();
 
@@ -301,6 +348,7 @@ int main(){
         }
     };
 
+
     array<array<uint8_t, 4>, 4> block = {
         {
         {0x32,0x88,0x31,0xe0},
@@ -310,8 +358,20 @@ int main(){
         }
     };
 
+    // array<array<uint8_t, 4>, 4> VI_teste = {
+    //     {
+    //     {0xa0,0xb4,0x4e,0x89},
+    //     {0xda,0x84,0x1a,0x4b},
+    //     {0x0,0x0,0x0,0x0},
+    //     {0x0,0x0,0x0,0x0}
+    //     }
+    // };
 
-    // array<array<uint8_t, 4>, 4> testeCTR = aesCTR(key);
+
+
+
+
+    // array<array<uint8_t, 4>, 4> testeCTR = aesEncript(VI_teste,key,10);
 
     // for(int i = 0;i<testeCTR.size();i++){
     //     for(int j = 0;j<testeCTR.size();j++){
@@ -324,12 +384,57 @@ int main(){
 
     std::string filename = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
     
-    vector<array<array<uint8_t, 4>, 4>> deciphered = aesCTR(key,filename);
+    vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,filename);
 
-    for(int i = 0;i<deciphered.size();i++){
-        for(int j = 0;j< deciphered[i].size();j++){
-            for(int k = 0;k <deciphered[i][j].size();k++){
-                cout << hex << (int) deciphered[i][j][k] << " ";
+    vector<array<array<uint8_t, 4>, 4>> original_msg;
+
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    ofstream output("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output.txt", ios::binary);
+
+
+    for(int i = 0;i<ciphered.size();i++){
+        for(int j = 0;j< ciphered[i].size();j++){
+            for(int k = 0;k <ciphered[i][j].size();k++){
+                output.put(ciphered[i][j][k]);
+                cout << hex << (int) ciphered[i][j][k] << " ";
             }
             cout << "\n";
         }
@@ -337,13 +442,16 @@ int main(){
     }
     cout << "\n";
 
-    std::ifstream arquivo("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.bin", std::ios::binary);
+    std::ifstream arquivo("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.txt", std::ios::binary);
 
-    for(int i = 0;i<10;i++){
+    for(int i = 0;i<16;i++){
         cout << hex << (int) arquivo.get() << " ";
     }
 
     arquivo.close();
+    output.close();
+
+
 
 
     return 0;
@@ -361,3 +469,5 @@ int main(){
     //     }
     //     cout << "\n";
     // }
+
+// 2B28AB097EAEF7CF15D2154F16A6883C
