@@ -172,9 +172,6 @@ array<array<uint8_t, 4>, 4> aesEncript(array<array<uint8_t, 4>, 4> block, array<
         mixColumns(block);
         key = keyExpansion(key,i);
         addRoundKey(key,block);
-
-
-        // cout << "Round: " << i+1 << "\n";
     }
 
     //Final round
@@ -185,6 +182,110 @@ array<array<uint8_t, 4>, 4> aesEncript(array<array<uint8_t, 4>, 4> block, array<
 
     return block;
 }
+
+uint64_t generateRandom(){
+    random_device rd;
+    uint64_t seed = rd() + static_cast<uint8_t>(
+        chrono::high_resolution_clock::now().time_since_epoch().count()
+    );
+    mt19937 gen(seed);
+
+    uniform_int_distribution<uint8_t> distribution(0,255);
+    uint8_t random8 = distribution(gen);
+
+    return random8;
+}
+
+array<array<uint8_t, 4>, 4> generate_IV_matrix(){
+    array<array<uint8_t, 4>, 4> matrix;
+
+    for(int i = 0;i<4;i++){
+        for(int j = 0;j<4;j++){
+            uint8_t n = generateRandom();
+            matrix[i][j] = n;
+            cout << hex << (int) n;
+        }
+    }
+    cout << "\n";
+
+    return matrix;
+}
+
+array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, int contador){
+    array<array<uint8_t,4>,4> IVRound;
+    int shift = 56;
+    for(int i = 2;i<IV.size();i++){
+        for(int j = 0;j<IV[i].size();j++){
+            uint8_t xored_number = (contador >> (shift)) & 0xFF;
+            IVRound[i][j] = IV[i][j]^(xored_number);
+            shift -= 8;
+        }
+    }
+
+    array<array<uint8_t,4>,4> encriptedCTRIV = aesEncript(IVRound,key,10);
+
+    return encriptedCTRIV;
+}
+
+array<array<uint8_t, 4>, 4> getEncriptedCipherBlock(const array<array<uint8_t, 4>, 4> &encriptedCTRIV, const array<array<uint8_t, 4>, 4> &block){
+    array<array<uint8_t, 4>, 4> cipherBlock;
+
+    for(int i = 0;i<encriptedCTRIV.size();i++){
+        for(int j = 0;j<encriptedCTRIV[i].size();j++){
+            cipherBlock[i][j] = (encriptedCTRIV[i][j]^block[i][j]);
+        }
+    }
+
+    return cipherBlock;
+}
+
+
+vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, string filepath){
+    array<array<uint8_t,4>,4> IV = generate_IV_matrix();
+    vector<array<array<uint8_t,4>,4>> encriptedFile;
+
+    std::ifstream arquivo(filepath, std::ios::binary);
+
+    if (!arquivo.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo." << std::endl;
+        return encriptedFile;
+    }
+
+
+    uint8_t byte = arquivo.get();
+    array<array<uint8_t,4>,4> block;
+    int pos = 0;
+    uint64_t contador = 0;
+
+    while(byte < 255){
+        block[pos/4][pos%4] = byte;
+        byte = arquivo.get();
+        pos++;
+
+        if(pos>15){
+            array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,contador);
+            array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,block);
+
+            encriptedFile.push_back(cipherBlock);
+
+            pos = 0;
+            contador++;
+        }
+
+
+    }
+
+    arquivo.close();
+
+
+    
+    return encriptedFile;
+}
+
+
+
+
+
 
 
 
@@ -209,17 +310,54 @@ int main(){
         }
     };
 
-    array<array<uint8_t, 4>, 4> encripted_block = aesEncript(block,key,10);
+
+    // array<array<uint8_t, 4>, 4> testeCTR = aesCTR(key);
+
+    // for(int i = 0;i<testeCTR.size();i++){
+    //     for(int j = 0;j<testeCTR.size();j++){
+    //         cout << hex << (int) testeCTR[i][j] << " ";
+    //     }
+    //     cout << "\n";
+    // }
 
 
-    for(int i = 0;i<encripted_block.size();i++){
-        for(int j = 0;j<encripted_block.size();j++){
-            cout << hex << (int) encripted_block[i][j] << " ";
+
+    std::string filename = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
+    
+    vector<array<array<uint8_t, 4>, 4>> deciphered = aesCTR(key,filename);
+
+    for(int i = 0;i<deciphered.size();i++){
+        for(int j = 0;j< deciphered[i].size();j++){
+            for(int k = 0;k <deciphered[i][j].size();k++){
+                cout << hex << (int) deciphered[i][j][k] << " ";
+            }
+            cout << "\n";
         }
         cout << "\n";
     }
+    cout << "\n";
 
+    std::ifstream arquivo("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.bin", std::ios::binary);
+
+    for(int i = 0;i<10;i++){
+        cout << hex << (int) arquivo.get() << " ";
+    }
+
+    arquivo.close();
 
 
     return 0;
 }
+
+
+
+
+
+
+
+    // for(int i = 0;i<encripted_block.size();i++){
+    //     for(int j = 0;j<encripted_block.size();j++){
+    //         cout << hex << (int) encripted_block[i][j] << " ";
+    //     }
+    //     cout << "\n";
+    // }
