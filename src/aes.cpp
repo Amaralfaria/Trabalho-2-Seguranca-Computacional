@@ -365,9 +365,7 @@ int main(){
 
     cin >> rounds;
 
-    array<array<uint8_t, 4>, 4> teste(aesEncript(block,key,rounds));
-
-
+    // array<array<uint8_t, 4>, 4> teste(aesEncript(block,key,rounds));
 
     string input = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
     string output_original = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output_original.txt";
@@ -377,7 +375,7 @@ int main(){
 
     // vector<array<array<uint8_t, 4>, 4>> original_msg(ciphered);
 
-    array<array<uint8_t,4>,4> IV = generate_IV_matrix();
+    // array<array<uint8_t,4>,4> IV = generate_IV_matrix();
 
 
     // for(int i = 0;i<original_msg.size();i++){
@@ -389,11 +387,8 @@ int main(){
 
     // writeResult(original_msg,output_original);
 
-    
+
     writeResult(ciphered,output_ciphered);
-
-
-
 
 
 
