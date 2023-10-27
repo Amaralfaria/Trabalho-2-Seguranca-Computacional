@@ -223,7 +223,7 @@ array<array<uint8_t, 4>, 4> generate_IV_matrix(){
     return matrix;
 }
 
-array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, int contador){
+array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, int contador, int rounds){
     array<array<uint8_t,4>,4> IVRound(IV);
 
     int shift = 56;
@@ -235,7 +235,7 @@ array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> 
         }
     }
 
-    array<array<uint8_t,4>,4> encriptedCTRIV = aesEncript(IVRound,key,10);
+    array<array<uint8_t,4>,4> encriptedCTRIV(aesEncript(IVRound,key,rounds));
 
     return encriptedCTRIV;
 }
@@ -253,42 +253,23 @@ array<array<uint8_t, 4>, 4> getEncriptedCipherBlock(const array<array<uint8_t, 4
 }
 
 vector<array<array<uint8_t, 4>, 4>> generateBlocks(string filepath){
-    
-}
-
-
-vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, string filepath){
-    array<array<uint8_t,4>,4> IV = generate_IV_matrix();
-
-    // for(int i = 0;i<IV.size();i++){
-    //     for(int j = 0;j<IV[i].size();j++){
-    //         cout << hex << (int) IV[i][j] << " "; 
-    //     }
-    //     cout << "\n";
-    // }
-    // cout << "\n";
-
-
-    vector<array<array<uint8_t,4>,4>> encriptedFile;
-
-    std::ifstream arquivo(filepath, std::ios::binary);
+    ifstream arquivo(filepath, std::ios::binary);
+    vector<array<array<uint8_t, 4>, 4>> blocks;
 
     if (!arquivo.is_open()) {
         std::cerr << "Erro ao abrir o arquivo." << std::endl;
-        return encriptedFile;
+        return blocks;
     }
 
-
-    uint8_t byte = arquivo.get();
     array<array<uint8_t,4>,4> block;
-
     for(int i = 0;i<block.size();i++){
         block[i].fill(0);
     }
 
     int pos = 0;
-    uint64_t contador = 0;
-    bool empty = true;;
+    bool empty = true;
+
+    uint8_t byte = arquivo.get();
 
 
     while(arquivo.peek() != EOF){
@@ -298,44 +279,67 @@ vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, stri
         pos++;
 
         if(pos>15){
-            array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,contador);
-
-            array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,block);
-
-            encriptedFile.push_back(array<array<uint8_t,4>,4>(cipherBlock));
+            blocks.push_back(array<array<uint8_t,4>,4>(block));
 
             for(int i = 0;i<block.size();i++){
                 block[i].fill(0);
             }
 
             pos = 0;
-            contador++;
             empty = true;
         }
     }
 
     if(!empty){
-        array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,contador);
-        array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,block);
-        encriptedFile.push_back(cipherBlock);
+        blocks.push_back(array<array<uint8_t,4>,4>(block));
     }
 
     
 
     arquivo.close();
 
+    return blocks;
+}
 
+
+vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, string filepath, int rounds){
+    array<array<uint8_t,4>,4> IV = generate_IV_matrix();
+
+    vector<array<array<uint8_t,4>,4>> encriptedFile(generateBlocks(filepath));
+
+    for(int i = 0;i<encriptedFile.size();i++){
+        array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
+        array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,encriptedFile[i]);
+
+        encriptedFile[i] = cipherBlock;
+    }
     
     return encriptedFile;
 }
 
+bool writeResult(vector<array<array<uint8_t, 4>, 4>> blocks, string filepath){
+    ofstream output(filepath, ios::binary);
 
+    if (!output.is_open()) {
+        std::cerr << "Erro ao escrever no arquivo." << std::endl;
+        return false;
+    }
 
+    for(int i = 0;i<blocks.size();i++){
+        for(int j = 0;j< blocks[i].size();j++){
+            for(int k = 0;k <blocks[i][j].size();k++){
+                output.put(blocks[i][j][k]);
+                cout << hex << (int) blocks[i][j][k] << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
 
-
-
-
-
+    output.close();
+    return true;
+}
 
 
 int main(){
@@ -357,6 +361,51 @@ int main(){
         {0xa8,0x8d,0xa2,0x34}
         }
     };
+    int rounds = 10;
+
+    cin >> rounds;
+
+    array<array<uint8_t, 4>, 4> teste(aesEncript(block,key,rounds));
+
+
+
+    string input = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
+    string output_original = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output_original.txt";
+    string output_ciphered = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output_ciphered.txt";
+    
+    vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,input,rounds);
+
+    vector<array<array<uint8_t, 4>, 4>> original_msg(ciphered);
+
+    array<array<uint8_t,4>,4> IV = generate_IV_matrix();
+
+
+    for(int i = 0;i<original_msg.size();i++){
+        array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
+        array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,original_msg[i]);
+
+        original_msg[i] = cipherBlock;
+    }
+
+    writeResult(original_msg,output_original);
+    writeResult(ciphered,output_ciphered);
+
+
+
+
+
+
+    std::ifstream opensslResult("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.txt", std::ios::binary);
+
+    for(int i = 0;i<16;i++){
+        cout << hex << (int) opensslResult.get() << " ";
+    }
+
+    opensslResult.close();
+
+    return 0;
+}
+
 
     // array<array<uint8_t, 4>, 4> VI_teste = {
     //     {
@@ -371,7 +420,7 @@ int main(){
 
 
 
-    // array<array<uint8_t, 4>, 4> testeCTR = aesEncript(VI_teste,key,10);
+    // array<array<uint8_t, 4>, 4> testeCTR = aesEncript(VI_teste,key,rounds);
 
     // for(int i = 0;i<testeCTR.size();i++){
     //     for(int j = 0;j<testeCTR.size();j++){
@@ -379,85 +428,6 @@ int main(){
     //     }
     //     cout << "\n";
     // }
-
-
-
-    std::string filename = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
-    
-    vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,filename);
-
-    vector<array<array<uint8_t, 4>, 4>> original_msg;
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    ofstream output("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output.txt", ios::binary);
-
-
-    for(int i = 0;i<ciphered.size();i++){
-        for(int j = 0;j< ciphered[i].size();j++){
-            for(int k = 0;k <ciphered[i][j].size();k++){
-                output.put(ciphered[i][j][k]);
-                cout << hex << (int) ciphered[i][j][k] << " ";
-            }
-            cout << "\n";
-        }
-        cout << "\n";
-    }
-    cout << "\n";
-
-    std::ifstream arquivo("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.txt", std::ios::binary);
-
-    for(int i = 0;i<16;i++){
-        cout << hex << (int) arquivo.get() << " ";
-    }
-
-    arquivo.close();
-    output.close();
-
-
-
-
-    return 0;
-}
-
-
 
 
 
