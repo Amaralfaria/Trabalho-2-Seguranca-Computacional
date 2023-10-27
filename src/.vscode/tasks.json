@@ -18,7 +18,7 @@
             "group": "build"
         },
         {
-            "type": "cppbuild",
+            "type": "shell",
             "label": "C/C++: g++ build active file",
             "command": "g++",
             "args": [

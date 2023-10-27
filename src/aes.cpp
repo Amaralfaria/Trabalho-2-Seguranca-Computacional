@@ -367,9 +367,9 @@ int main(){
 
     // array<array<uint8_t, 4>, 4> teste(aesEncript(block,key,rounds));
 
-    string input = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\teste.txt";
-    string output_original = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output_original.txt";
-    string output_ciphered = "C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\output_ciphered.txt";
+    string input = "arquivos_cifracao_decifracao/texto_teste.txt";
+    string output_original = "arquivos_cifracao_decifracao/output_original.txt";
+    string output_ciphered = "arquivos_cifracao_decifracao/output_ciphered.txt";
     
     vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,input,rounds);
 
@@ -392,7 +392,7 @@ int main(){
 
 
 
-    std::ifstream opensslResult("C:\\Users\\ionaa\\OneDrive\\Documentos\\unb\\quinto_semestre\\seguranca\\trabalho2\\src\\encryptedfile.txt", std::ios::binary);
+    std::ifstream opensslResult("arquivos_cifracao_decifracao/encryptedfile.txt", std::ios::binary);
 
     for(int i = 0;i<16;i++){
         cout << hex << (int) opensslResult.get() << " ";
