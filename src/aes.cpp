@@ -375,19 +375,21 @@ int main(){
     
     vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,input,rounds);
 
-    vector<array<array<uint8_t, 4>, 4>> original_msg(ciphered);
+    // vector<array<array<uint8_t, 4>, 4>> original_msg(ciphered);
 
     array<array<uint8_t,4>,4> IV = generate_IV_matrix();
 
 
-    for(int i = 0;i<original_msg.size();i++){
-        array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
-        array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,original_msg[i]);
+    // for(int i = 0;i<original_msg.size();i++){
+    //     array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
+    //     array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,original_msg[i]);
 
-        original_msg[i] = cipherBlock;
-    }
+    //     original_msg[i] = cipherBlock;
+    // }
 
-    writeResult(original_msg,output_original);
+    // writeResult(original_msg,output_original);
+
+    
     writeResult(ciphered,output_ciphered);
 
 
@@ -400,8 +402,11 @@ int main(){
     for(int i = 0;i<16;i++){
         cout << hex << (int) opensslResult.get() << " ";
     }
+    cout << "\n";
 
     opensslResult.close();
+
+    
 
     return 0;
 }
