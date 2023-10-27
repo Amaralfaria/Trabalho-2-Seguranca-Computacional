@@ -159,17 +159,25 @@ void shiftRows(array<array<uint8_t, 4>, 4> &block){
     for(int i = 1;i<block.size();i++){
         rotate(block[i].begin(), block[i].begin() + i, block[i].end());
     }
+
 }
 
+
+
 array<array<uint8_t, 4>, 4> aesEncript(array<array<uint8_t, 4>, 4> block, array<array<uint8_t, 4>, 4> key, int n_rounds){
+
     //Initial round
     addRoundKey(key,block);
+
+
 
     //1 : n-1 rounds
     for(int i = 1;i<n_rounds;i++){
         subBytes(block);
         shiftRows(block);
         mixColumns(block);
+
+
         key = keyExpansion(key,i);
         addRoundKey(key,block);
     }
@@ -197,40 +205,45 @@ uint64_t generateRandom(){
 }
 
 array<array<uint8_t, 4>, 4> generate_IV_matrix(){
-    array<array<uint8_t, 4>, 4> matrix;
-    // uint64_t n = generateRandom();
-    uint64_t n = 0xa0b44e89da841a4b;
+    array<array<uint8_t, 4>, 4> matrix = {{
+        {0xa0,0xb4,0x4e,0x89},
+        {0xda,0x84,0x1a,0x4b},
+        {0x00,0x0,0x0,0x0},
+        {0x00,0x0,0x0,0x0}
+    }};
 
+
+    // uint64_t n = generateRandom();
+    uint64_t n = 0xa0dab4844e1a894b;
+
+    
     int shift = 56;
 
     for(int i = 0;i<matrix.size();i++){
         matrix[i].fill(0);
     }
 
-    // cout << hex << n << "\n";
-
-    for(int i = 0;i<2;i++){
-        for(int j = 0;j<4;j++){
-            matrix[i][j] = (uint8_t) (n >> (shift)) & 0XFF;
-            // cout << hex << (int) matrix[i][j] << " ";
+    for(int i = 0;i<4;i++){
+        for(int j = 0;j<2;j++){
+            matrix[j][i] = (uint8_t) (n >> (shift)) & 0XFF;
             shift-=8;
         }
-
-        cout << "\n";
     }
-    cout << "\n";
+
 
     return matrix;
 }
 
-array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, int contador, int rounds){
+array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, uint64_t contador, int rounds){
     array<array<uint8_t,4>,4> IVRound(IV);
+    
 
     int shift = 56;
-    for(int i = 2;i<IV.size();i++){
-        for(int j = 0;j<IV[i].size();j++){
+    for(int i = 0;i<IV.size();i++){
+        for(int j = 2;j<IV[i].size();j++){
             uint8_t xored_number = (contador >> (shift)) & 0xFF;
-            IVRound[i][j] = IV[i][j]^(xored_number);
+            // IVRound[j][i] = (IV[i][j]^(xored_number));
+            IVRound[j][i] = xored_number;
             shift -= 8;
         }
     }
@@ -269,18 +282,17 @@ vector<array<array<uint8_t, 4>, 4>> generateBlocks(string filepath){
     int pos = 0;
     bool empty = true;
 
-    uint8_t byte = arquivo.get();
 
 
     while(arquivo.peek() != EOF){
+        uint8_t byte = arquivo.get();
         empty = false;
-        block[pos/4][pos%4] = byte;
-        byte = arquivo.get();
+        block[pos%4][pos/4] = byte;
         pos++;
 
         if(pos>15){
             blocks.push_back(array<array<uint8_t,4>,4>(block));
-
+            
             for(int i = 0;i<block.size();i++){
                 block[i].fill(0);
             }
@@ -307,7 +319,7 @@ vector<array<array<uint8_t, 4>, 4>> aesCTR(array<array<uint8_t, 4>, 4> key, stri
 
     vector<array<array<uint8_t,4>,4>> encriptedFile(generateBlocks(filepath));
 
-    for(int i = 0;i<encriptedFile.size();i++){
+    for(uint64_t i = 0;i<encriptedFile.size();i++){
         array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
         array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,encriptedFile[i]);
 
@@ -328,8 +340,8 @@ bool writeResult(vector<array<array<uint8_t, 4>, 4>> blocks, string filepath){
     for(int i = 0;i<blocks.size();i++){
         for(int j = 0;j< blocks[i].size();j++){
             for(int k = 0;k <blocks[i][j].size();k++){
-                output.put(blocks[i][j][k]);
-                cout << hex << (int) blocks[i][j][k] << " ";
+                output.put(blocks[i][k][j]);
+                cout << hex << (int) blocks[i][k][j] << " ";
             }
             cout << "\n";
         }
@@ -338,6 +350,7 @@ bool writeResult(vector<array<array<uint8_t, 4>, 4>> blocks, string filepath){
     cout << "\n";
 
     output.close();
+    
     return true;
 }
 
@@ -352,7 +365,6 @@ int main(){
         }
     };
 
-
     array<array<uint8_t, 4>, 4> block = {
         {
         {0x32,0x88,0x31,0xe0},
@@ -361,83 +373,40 @@ int main(){
         {0xa8,0x8d,0xa2,0x34}
         }
     };
-    int rounds = 10;
 
+
+    int rounds = 10;
     cin >> rounds;
 
-    // array<array<uint8_t, 4>, 4> teste(aesEncript(block,key,rounds));
 
     string input = "arquivos_cifracao_decifracao/texto_teste.txt";
-    string output_original = "arquivos_cifracao_decifracao/output_original.txt";
     string output_ciphered = "arquivos_cifracao_decifracao/output_ciphered.txt";
+
+
+
     
     vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,input,rounds);
-
-    // vector<array<array<uint8_t, 4>, 4>> original_msg(ciphered);
-
-    // array<array<uint8_t,4>,4> IV = generate_IV_matrix();
-
-
-    // for(int i = 0;i<original_msg.size();i++){
-    //     array<array<uint8_t,4>,4> encriptedCTRIV = getEncriptedCTRIV(IV,key,i,rounds);
-    //     array<array<uint8_t,4>,4> cipherBlock = getEncriptedCipherBlock(encriptedCTRIV,original_msg[i]);
-
-    //     original_msg[i] = cipherBlock;
-    // }
-
-    // writeResult(original_msg,output_original);
-
 
     writeResult(ciphered,output_ciphered);
 
 
 
-    std::ifstream opensslResult("arquivos_cifracao_decifracao/encryptedfile.txt", std::ios::binary);
+    std::ifstream opensslResult("arquivos_cifracao_decifracao/encryptedfile_ctr.txt", std::ios::binary);
 
-    for(int i = 0;i<16;i++){
+
+    while(opensslResult.peek() != EOF){
         cout << hex << (int) opensslResult.get() << " ";
     }
     cout << "\n";
 
     opensslResult.close();
 
-    
-
     return 0;
 }
 
 
-    // array<array<uint8_t, 4>, 4> VI_teste = {
-    //     {
-    //     {0xa0,0xb4,0x4e,0x89},
-    //     {0xda,0x84,0x1a,0x4b},
-    //     {0x0,0x0,0x0,0x0},
-    //     {0x0,0x0,0x0,0x0}
-    //     }
-    // };
+// 2b7e151628aed2a6abf7158809cf4f3c
 
+// a0da0000b48400004e1a0000894b0000
 
-
-
-
-    // array<array<uint8_t, 4>, 4> testeCTR = aesEncript(VI_teste,key,rounds);
-
-    // for(int i = 0;i<testeCTR.size();i++){
-    //     for(int j = 0;j<testeCTR.size();j++){
-    //         cout << hex << (int) testeCTR[i][j] << " ";
-    //     }
-    //     cout << "\n";
-    // }
-
-
-
-
-
-    // for(int i = 0;i<encripted_block.size();i++){
-    //     for(int j = 0;j<encripted_block.size();j++){
-    //         cout << hex << (int) encripted_block[i][j] << " ";
-    //     }
-    //     cout << "\n";
-    // }
-
-// 2B28AB097EAEF7CF15D2154F16A6883C
+// openssl enc -aes-128-ctr -e -in texto_teste.txt -out encryptedfile_ctr.txt -K 2b7e151628aed2a6abf7158809cf4f3c -iv a0da0000b48400004e1a0000894b0000 -p -nosalt -nopad
