@@ -58,7 +58,7 @@ array<array<uint8_t, 4>, 4> aesDecipher(array<array<uint8_t, 4>, 4> cipherText, 
 void invSubBytes(array<array<uint8_t, 4>, 4>& state) {
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            state[i][j] = invBox[state[i][j] / 16][state[i][j] % 16];
+            state[i][j] = invSBox[state[i][j] / 16][state[i][j] % 16];
         }
     }
 }
