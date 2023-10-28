@@ -205,12 +205,7 @@ uint64_t generateRandom(){
 }
 
 array<array<uint8_t, 4>, 4> generate_IV_matrix(){
-    array<array<uint8_t, 4>, 4> matrix = {{
-        {0xa0,0xb4,0x4e,0x89},
-        {0xda,0x84,0x1a,0x4b},
-        {0x00,0x0,0x0,0x0},
-        {0x00,0x0,0x0,0x0}
-    }};
+    array<array<uint8_t, 4>, 4> matrix;
 
 
     // uint64_t n = generateRandom();
@@ -223,8 +218,8 @@ array<array<uint8_t, 4>, 4> generate_IV_matrix(){
         matrix[i].fill(0);
     }
 
-    for(int i = 0;i<4;i++){
-        for(int j = 0;j<2;j++){
+    for(int i = 0;i<2;i++){
+        for(int j = 0;j<4;j++){
             matrix[j][i] = (uint8_t) (n >> (shift)) & 0XFF;
             shift-=8;
         }
@@ -236,17 +231,25 @@ array<array<uint8_t, 4>, 4> generate_IV_matrix(){
 
 array<array<uint8_t, 4>, 4> getEncriptedCTRIV(const array<array<uint8_t, 4>, 4> &IV, const array<array<uint8_t, 4>, 4> &key, uint64_t contador, int rounds){
     array<array<uint8_t,4>,4> IVRound(IV);
-    
 
     int shift = 56;
-    for(int i = 0;i<IV.size();i++){
-        for(int j = 2;j<IV[i].size();j++){
+    for(int i = 2;i<IV.size();i++){
+        for(int j = 0;j<IV[i].size();j++){
             uint8_t xored_number = (contador >> (shift)) & 0xFF;
             // IVRound[j][i] = (IV[i][j]^(xored_number));
             IVRound[j][i] = xored_number;
             shift -= 8;
         }
     }
+    for(int i = 0;i<IV.size();i++){
+        for(int j = 0;j<IV[i].size();j++){
+            cout << hex << (int)IVRound[i][j] << " ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+
+    
 
     array<array<uint8_t,4>,4> encriptedCTRIV(aesEncript(IVRound,key,rounds));
 
@@ -381,8 +384,11 @@ int main(){
 
     string input = "arquivos_cifracao_decifracao/texto_teste.txt";
     string output_ciphered = "arquivos_cifracao_decifracao/output_ciphered.txt";
+    // string output_deciphered = "arquivos_cifracao_decifracao/output_deciphered.txt";
 
 
+    // vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,output_ciphered,rounds);
+    // writeResult(ciphered,output_deciphered);
 
     
     vector<array<array<uint8_t, 4>, 4>> ciphered = aesCTR(key,input,rounds);
@@ -407,6 +413,6 @@ int main(){
 
 // 2b7e151628aed2a6abf7158809cf4f3c
 
-// a0da0000b48400004e1a0000894b0000
+// a0dab4844e1a894b
 
-// openssl enc -aes-128-ctr -e -in texto_teste.txt -out encryptedfile_ctr.txt -K 2b7e151628aed2a6abf7158809cf4f3c -iv a0da0000b48400004e1a0000894b0000 -p -nosalt -nopad
+// openssl enc -aes-128-ctr -e -in texto_teste.txt -out encryptedfile_ctr.txt -K 2b7e151628aed2a6abf7158809cf4f3c -iv a0dab4844e1a894b -p -nosalt -nopad
