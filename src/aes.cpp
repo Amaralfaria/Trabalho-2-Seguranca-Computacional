@@ -20,7 +20,7 @@ int main(){
     string chave;
     array<array<uint8_t, 4>, 4> key;
 
-    cout << "Escolha uma opercação:" << "\n";
+    cout << "Escolha uma operação:" << "\n";
     cout << "1 - Cifrar bloco unico" << "\n";
     cout << "2 - Decifrar bloco unico" << "\n";
     cout << "3 - Cifrar arquivo txt com AES-CTR" << "\n";
