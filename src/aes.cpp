@@ -12,9 +12,11 @@ int main(){
 
     //3925841d02dc09fbdc118597196a0b32 bloco_cifrado
 
-    // arquivos_cifracao_decifracao/texto_teste.txt input
-    // arquivos_cifracao_decifracao/output_ciphered.txt output
+    // output/arquivos_cifracao_decifracao/texto_teste.txt input
+    // output/arquivos_cifracao_decifracao/output_ciphered.txt output
     // a0dab4844e1a894b IV
+
+    // openssl enc -aes-128-ctr -e -in texto_teste.txt -out encryptedfile_ctr.txt -K 2b7e151628aed2a6abf7158809cf4f3c -iv a0dab4844e1a894b -p -nosalt -nopad
 
     int operacao,rounds;
     string chave;
@@ -80,20 +82,8 @@ int main(){
         }
     }
 
-
-
-    std::ifstream opensslResult("output/arquivos_cifracao_decifracao/encryptedfile_ctr.txt", std::ios::binary);
-
-
-    while(opensslResult.peek() != EOF){
-        cout << hex << (int) opensslResult.get() << " ";
-    }
-    cout << "\n";
-
-    opensslResult.close();
-
     return 0;
 }
 
 
-// openssl enc -aes-128-ctr -e -in texto_teste.txt -out encryptedfile_ctr.txt -K 2b7e151628aed2a6abf7158809cf4f3c -iv a0dab4844e1a894b -p -nosalt -nopad
+
